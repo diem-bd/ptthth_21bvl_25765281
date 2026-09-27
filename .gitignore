@@ -1,0 +1,11 @@
+# Compiled binaries
+bin/
+*.class
+
+# Document & report files (submitted separately)
+*.docx
+*.pdf
+~$*
+
+# OS files
+.DS_Store
