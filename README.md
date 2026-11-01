@@ -46,3 +46,11 @@ Link GitHub kho lưu trữ: **https://github.com/diem-bd/ptthth_21bvl_25765281**
 * **`src/baitap10/`**: `ServiceDiscoveryServer.java` & `ServiceDiscoveryClient.java` (Khám phá dịch vụ 2 tầng: Tầng 1 UDP broadcast discovery $\rightarrow$ Tầng 2 tự động kết nối TCP service tương ứng và gọi lệnh).
 * **`screenshots/`**: Bộ 12 ảnh chụp toàn màn hình VS Code + kết quả chạy chi tiết của từng ví dụ và bài tập đề xuất (từ Ví dụ 4.1 đến Bài tập 10).
 * **`BAO_CAO_LAB4.md`**: Báo cáo tổng hợp chi tiết bài làm có gắn kèm link GitHub và toàn bộ ảnh chụp minh chứng.
+
+#### `Lab3_JavaStream/` (Lab 03 theo đề: Java I/O Streams)
+
+* Sáu file: `ConsoleReaderDemo`, `TextFileDemo`, `BinaryFileCopy`, `Product`, `ProductCsvApp`, `InventoryManager`.
+* Dữ liệu UTF-8, CSV sản phẩm, tổng giá trị tồn kho, tìm sản phẩm cao nhất, báo lỗi cụ thể theo tệp/dòng.
+* [Hướng dẫn chạy Lab 03](Lab3_JavaStream/README.md).
+* Lưu ý: thư mục cũ `Lab3_OOPJava/` là bài **Lab 02 — OOP** theo tên đề; `Lab2_ReviewJava/` là **Lab 01b bổ sung**.
+* `PolygonDemo` trong Lab 01b đã có menu nhập kích thước/tọa độ bằng `Scanner` và so sánh hình dạng/kích thước đa giác.

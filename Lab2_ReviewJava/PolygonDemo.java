@@ -2,6 +2,7 @@ package Lab2_ReviewJava;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Scanner;
 
@@ -48,7 +49,38 @@ class CoordinatePolygon implements Polygon {
     protected List<Point> vertices;
 
     public CoordinatePolygon(List<Point> vertices) {
+        if (vertices == null || vertices.size() < 3) {
+            throw new IllegalArgumentException("Đa giác cần ít nhất 3 đỉnh.");
+        }
+        for (int i = 0; i < vertices.size(); i++) {
+            Point point = vertices.get(i);
+            if (point == null || !Double.isFinite(point.x) || !Double.isFinite(point.y)) {
+                throw new IllegalArgumentException("Tọa độ phải là số hữu hạn.");
+            }
+            for (int j = 0; j < i; j++) {
+                if (point.distance(vertices.get(j)) < 1e-8) {
+                    throw new IllegalArgumentException("Các đỉnh không được trùng nhau.");
+                }
+            }
+        }
         this.vertices = new ArrayList<>(vertices);
+        int n = vertices.size();
+        for (int i = 0; i < n; i++) {
+            for (int j = i + 1; j < n; j++) {
+                // Hai cạnh kề có chung đỉnh nên không phải giao cắt bên trong.
+                if (j == i + 1 || (i == 0 && j == n - 1)) continue;
+                if (java.awt.geom.Line2D.linesIntersect(
+                        vertices.get(i).x, vertices.get(i).y,
+                        vertices.get((i + 1) % n).x, vertices.get((i + 1) % n).y,
+                        vertices.get(j).x, vertices.get(j).y,
+                        vertices.get((j + 1) % n).x, vertices.get((j + 1) % n).y)) {
+                    throw new IllegalArgumentException("Các cạnh không được tự cắt nhau.");
+                }
+            }
+        }
+        if (area() <= 1e-8 || !Double.isFinite(area()) || !Double.isFinite(perimeter())) {
+            throw new IllegalArgumentException("Đa giác suy biến hoặc tọa độ quá lớn.");
+        }
     }
 
     public List<Point> getVertices() {
@@ -80,9 +112,29 @@ class CoordinatePolygon implements Polygon {
 
     public boolean isSameAs(CoordinatePolygon other) {
         if (other == null || this.vertices.size() != other.vertices.size()) return false;
-        // Kiểm tra cùng toạ độ đỉnh hoặc cùng diện tích và chu vi
-        return Math.abs(this.area() - other.area()) < 1e-4 &&
-               Math.abs(this.perimeter() - other.perimeter()) < 1e-4;
+        // Bằng nhau về hình dạng/kích thước (congruent), cho phép tịnh tiến,
+        // xoay, đối xứng, đổi đỉnh bắt đầu và đảo chiều liệt kê đỉnh.
+        // So sánh mọi khoảng cách cặp đỉnh, không chỉ diện tích/chu vi.
+        int n = vertices.size();
+        for (int start = 0; start < n; start++) {
+            for (int direction : new int[] {1, -1}) {
+                boolean matches = true;
+                for (int i = 0; i < n && matches; i++) {
+                    for (int j = i + 1; j < n; j++) {
+                        int mappedI = Math.floorMod(start + direction * i, n);
+                        int mappedJ = Math.floorMod(start + direction * j, n);
+                        double a = vertices.get(i).distance(vertices.get(j));
+                        double b = other.vertices.get(mappedI).distance(other.vertices.get(mappedJ));
+                        if (Math.abs(a - b) > 1e-6 * Math.max(1, Math.max(a, b))) {
+                            matches = false;
+                            break;
+                        }
+                    }
+                }
+                if (matches) return true;
+            }
+        }
+        return false;
     }
 }
 
@@ -191,37 +243,132 @@ class Octagon implements Polygon {
 
 public class PolygonDemo {
     public static void main(String[] args) {
-        System.out.println("=== DEMO BÀI 7: HỆ THỐNG ĐA GIÁC (POLYGON) ===");
+        Scanner scanner = new Scanner(System.in);
+        System.out.println("=== BÀI 7: HỆ THỐNG ĐA GIÁC – NHẬP TỪ BÀN PHÍM ===");
+        try {
+            while (true) {
+                System.out.println("\n1. Tam giác  2. Tam giác cân  3. Tam giác đều  4. Chữ nhật");
+                System.out.println("5. Vuông  6. Ngũ giác đều  7. Lục giác đều  8. Bát giác đều");
+                System.out.println("9. Đa giác theo tọa độ  10. So sánh hai đa giác  0. Thoát");
+                int choice = readInt(scanner, "Chọn: ", 0, 10);
+                if (choice == 0) {
+                    System.out.println("Kết thúc chương trình.");
+                    return;
+                }
+                try {
+                    Polygon polygon;
+                    switch (choice) {
+                        case 1:
+                            double a = readPositive(scanner, "Cạnh a: ");
+                            double b = readPositive(scanner, "Cạnh b: ");
+                            double c = readPositive(scanner, "Cạnh c: ");
+                            validateTriangle(a, b, c);
+                            polygon = new Triangle(a, b, c);
+                            break;
+                        case 2:
+                            double side = readPositive(scanner, "Cạnh bên: ");
+                            double base = readPositive(scanner, "Cạnh đáy: ");
+                            validateTriangle(side, side, base);
+                            polygon = new IsoscelesTriangle(side, base);
+                            break;
+                        case 3:
+                            polygon = new EquilateralTriangle(readPositive(scanner, "Cạnh: "));
+                            break;
+                        case 4:
+                            polygon = new Rectangle(readPositive(scanner, "Chiều dài: "),
+                                    readPositive(scanner, "Chiều rộng: "));
+                            break;
+                        case 5:
+                            polygon = new Square(readPositive(scanner, "Cạnh: "));
+                            break;
+                        case 6:
+                            polygon = new Pentagon(readPositive(scanner, "Cạnh: "));
+                            break;
+                        case 7:
+                            polygon = new Hexagon(readPositive(scanner, "Cạnh: "));
+                            break;
+                        case 8:
+                            polygon = new Octagon(readPositive(scanner, "Cạnh: "));
+                            break;
+                        case 9:
+                            polygon = readPolygon(scanner);
+                            break;
+                        case 10:
+                            System.out.println("Đa giác thứ nhất:");
+                            CoordinatePolygon first = readPolygon(scanner);
+                            display(first);
+                            System.out.println("Đa giác thứ hai:");
+                            CoordinatePolygon second = readPolygon(scanner);
+                            display(second);
+                            System.out.println("Cùng hình dạng và kích thước: "
+                                    + (first.isSameAs(second) ? "GIỐNG NHAU" : "KHÁC NHAU"));
+                            continue;
+                        default:
+                            throw new IllegalArgumentException("Lựa chọn không hợp lệ.");
+                    }
+                    display(polygon);
+                } catch (IllegalArgumentException e) {
+                    System.out.println("Dữ liệu không hợp lệ: " + e.getMessage());
+                }
+            }
+        } catch (NoSuchElementException e) {
+            System.out.println("Đã hết dữ liệu bàn phím (EOF). Kết thúc chương trình.");
+        }
+    }
 
-        // 1. Tạo các đa giác theo kích thước
-        Polygon eqTriangle = new EquilateralTriangle(6.0);
-        Polygon rect = new Rectangle(8.0, 5.0);
-        Polygon sq = new Square(4.0);
-        Polygon penta = new Pentagon(5.0);
-        Polygon hexa = new Hexagon(5.0);
-        Polygon octa = new Octagon(5.0);
+    private static double readNumber(Scanner scanner, String prompt) {
+        while (true) {
+            System.out.print(prompt);
+            try {
+                double value = Double.parseDouble(scanner.nextLine().trim());
+                if (!Double.isFinite(value)) throw new NumberFormatException();
+                return value;
+            } catch (NumberFormatException e) {
+                System.out.println("Vui lòng nhập một số hữu hạn, dùng dấu chấm cho phần thập phân.");
+            }
+        }
+    }
 
-        System.out.println("1. Diện tích và chu vi theo kích thước:");
-        System.out.printf("- Tam giác đều (cạnh 6): Chu vi = %.2f | Diện tích = %.2f%n", eqTriangle.perimeter(), eqTriangle.area());
-        System.out.printf("- Hình chữ nhật (8x5):  Chu vi = %.2f | Diện tích = %.2f%n", rect.perimeter(), rect.area());
-        System.out.printf("- Hình vuông (cạnh 4):   Chu vi = %.2f | Diện tích = %.2f%n", sq.perimeter(), sq.area());
-        System.out.printf("- Ngũ giác đều (cạnh 5): Chu vi = %.2f | Diện tích = %.2f%n", penta.perimeter(), penta.area());
-        System.out.printf("- Lục giác đều (cạnh 5): Chu vi = %.2f | Diện tích = %.2f%n", hexa.perimeter(), hexa.area());
-        System.out.printf("- Bát giác đều (cạnh 5): Chu vi = %.2f | Diện tích = %.2f%n", octa.perimeter(), octa.area());
+    private static double readPositive(Scanner scanner, String prompt) {
+        while (true) {
+            double value = readNumber(scanner, prompt);
+            if (value > 0) return value;
+            System.out.println("Kích thước phải lớn hơn 0.");
+        }
+    }
 
-        // 2. Nhập và kiểm tra đa giác theo toạ độ đỉnh
-        System.out.println("\n2. Nhập đa giác qua toạ độ đỉnh (Ví dụ: Tam giác và Tứ giác):");
-        List<Point> vertices1 = List.of(new Point(0, 0), new Point(4, 0), new Point(0, 3));
-        CoordinatePolygon poly1 = new CoordinatePolygon(vertices1);
-        System.out.printf("Đa giác 1 (Đỉnh: %s): Chu vi = %.2f | Diện tích = %.2f%n",
-                poly1.getVertices(), poly1.perimeter(), poly1.area());
+    private static int readInt(Scanner scanner, String prompt, int min, int max) {
+        while (true) {
+            double value = readNumber(scanner, prompt);
+            if (value >= min && value <= max && value == Math.rint(value)) return (int) value;
+            System.out.printf("Nhập số nguyên từ %d đến %d.%n", min, max);
+        }
+    }
 
-        List<Point> vertices2 = List.of(new Point(1, 1), new Point(5, 1), new Point(1, 4));
-        CoordinatePolygon poly2 = new CoordinatePolygon(vertices2);
-        System.out.printf("Đa giác 2 (Đỉnh: %s): Chu vi = %.2f | Diện tích = %.2f%n",
-                poly2.getVertices(), poly2.perimeter(), poly2.area());
+    private static void validateTriangle(double a, double b, double c) {
+        if (a + b <= c || a + c <= b || b + c <= a) {
+            throw new IllegalArgumentException("Ba cạnh không tạo thành tam giác.");
+        }
+    }
 
-        boolean same = poly1.isSameAs(poly2);
-        System.out.println("-> Kiểm tra hai đa giác có giống nhau (cùng diện tích và chu vi): " + (same ? "GIỐNG NHAU" : "KHÁC NHAU"));
+    private static CoordinatePolygon readPolygon(Scanner scanner) {
+        int count = readInt(scanner, "Số đỉnh (3–100, nhập theo thứ tự quanh biên): ", 3, 100);
+        List<Point> vertices = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            double x = readNumber(scanner, "Đỉnh " + (i + 1) + " – x: ");
+            double y = readNumber(scanner, "Đỉnh " + (i + 1) + " – y: ");
+            vertices.add(new Point(x, y));
+        }
+        return new CoordinatePolygon(vertices);
+    }
+
+    private static void display(Polygon polygon) {
+        double area = polygon.area();
+        double perimeter = polygon.perimeter();
+        if (!Double.isFinite(area) || !Double.isFinite(perimeter)) {
+            throw new IllegalArgumentException("Kích thước quá lớn để tính bằng double.");
+        }
+        System.out.printf("%s: Chu vi = %.2f | Diện tích = %.2f%n",
+                polygon.getClass().getSimpleName(), perimeter, area);
     }
 }

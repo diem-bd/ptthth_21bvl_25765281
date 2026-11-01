@@ -1,0 +1,9 @@
+ma,ten,donGia,soLuong
+SP01,Bàn phím cơ,350000,10
+SP02,Thiếu cột,250000
+SP03,Số không hợp lệ,abc,2
+,Mã rỗng,1000,1
+SP05,Giá âm,-1000,1
+SP06,Số lượng âm,1000,-2
+SP07,Chuột không dây,250000,5
+SP08,Giá NaN,NaN,2
