@@ -1,0 +1,7 @@
+BÁO CÁO TỒN KHO
+SP01 - Bàn phím cơ | Giá: 350,000 | SL: 10 | Tồn kho: 3,500,000 VND
+SP02 - Chuột không dây | Giá: 250,000 | SL: 5 | Tồn kho: 1,250,000 VND
+SP03 - Tai nghe | Giá: 600,000 | SL: 3 | Tồn kho: 1,800,000 VND
+Số sản phẩm: 3
+Tổng giá trị tồn kho: 6,550,000 VND
+Sản phẩm có giá trị tồn kho cao nhất: SP01 - Bàn phím cơ | Giá: 350,000 | SL: 10 | Tồn kho: 3,500,000 VND

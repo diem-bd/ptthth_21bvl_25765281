@@ -10,3 +10,11 @@ bin/
 # OS files
 .DS_Store
 .vscode/
+
+# Lab 03: sản phẩm sinh ra khi chạy demo, không cần đưa lên kho
+Lab3_JavaStream/data/copy*.png
+Lab3_JavaStream/data/source.png
+Lab3_JavaStream/data/ghi_chu.txt
+lab01-*.txt
+lab01-anh-ra.png
+sinhvien_binary.dat
