@@ -52,35 +52,7 @@ class CoordinatePolygon implements Polygon {
         if (vertices == null || vertices.size() < 3) {
             throw new IllegalArgumentException("Đa giác cần ít nhất 3 đỉnh.");
         }
-        for (int i = 0; i < vertices.size(); i++) {
-            Point point = vertices.get(i);
-            if (point == null || !Double.isFinite(point.x) || !Double.isFinite(point.y)) {
-                throw new IllegalArgumentException("Tọa độ phải là số hữu hạn.");
-            }
-            for (int j = 0; j < i; j++) {
-                if (point.distance(vertices.get(j)) < 1e-8) {
-                    throw new IllegalArgumentException("Các đỉnh không được trùng nhau.");
-                }
-            }
-        }
         this.vertices = new ArrayList<>(vertices);
-        int n = vertices.size();
-        for (int i = 0; i < n; i++) {
-            for (int j = i + 1; j < n; j++) {
-                // Hai cạnh kề có chung đỉnh nên không phải giao cắt bên trong.
-                if (j == i + 1 || (i == 0 && j == n - 1)) continue;
-                if (java.awt.geom.Line2D.linesIntersect(
-                        vertices.get(i).x, vertices.get(i).y,
-                        vertices.get((i + 1) % n).x, vertices.get((i + 1) % n).y,
-                        vertices.get(j).x, vertices.get(j).y,
-                        vertices.get((j + 1) % n).x, vertices.get((j + 1) % n).y)) {
-                    throw new IllegalArgumentException("Các cạnh không được tự cắt nhau.");
-                }
-            }
-        }
-        if (area() <= 1e-8 || !Double.isFinite(area()) || !Double.isFinite(perimeter())) {
-            throw new IllegalArgumentException("Đa giác suy biến hoặc tọa độ quá lớn.");
-        }
     }
 
     public List<Point> getVertices() {
@@ -112,23 +84,20 @@ class CoordinatePolygon implements Polygon {
 
     public boolean isSameAs(CoordinatePolygon other) {
         if (other == null || this.vertices.size() != other.vertices.size()) return false;
-        // Bằng nhau về hình dạng/kích thước (congruent), cho phép tịnh tiến,
-        // xoay, đối xứng, đổi đỉnh bắt đầu và đảo chiều liệt kê đỉnh.
-        // So sánh mọi khoảng cách cặp đỉnh, không chỉ diện tích/chu vi.
+        // So sánh hai đa giác có giống nhau: cùng số đỉnh và các cạnh tương ứng dài bằng nhau.
+        // Cho phép tịnh tiến (khác vị trí) và đảo chiều liệt kê đỉnh.
         int n = vertices.size();
         for (int start = 0; start < n; start++) {
             for (int direction : new int[] {1, -1}) {
                 boolean matches = true;
-                for (int i = 0; i < n && matches; i++) {
-                    for (int j = i + 1; j < n; j++) {
-                        int mappedI = Math.floorMod(start + direction * i, n);
-                        int mappedJ = Math.floorMod(start + direction * j, n);
-                        double a = vertices.get(i).distance(vertices.get(j));
-                        double b = other.vertices.get(mappedI).distance(other.vertices.get(mappedJ));
-                        if (Math.abs(a - b) > 1e-6 * Math.max(1, Math.max(a, b))) {
-                            matches = false;
-                            break;
-                        }
+                for (int i = 0; i < n; i++) {
+                    double a = vertices.get(i).distance(vertices.get((i + 1) % n));
+                    int nextIndex = Math.floorMod(start + direction * (i + 1), n);
+                    double b = other.vertices.get(Math.floorMod(start + direction * i, n))
+                            .distance(other.vertices.get(nextIndex));
+                    if (Math.abs(a - b) > 1e-6) {
+                        matches = false;
+                        break;
                     }
                 }
                 if (matches) return true;

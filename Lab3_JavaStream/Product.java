@@ -17,13 +17,8 @@ public class Product {
         if (name == null || name.isBlank()) {
             throw new IllegalArgumentException("Tên không được rỗng");
         }
-        // Định dạng CSV đơn giản của đề không hỗ trợ cột chứa dấu phẩy/xuống dòng.
-        if (code.matches("(?s).*[\r\n,].*") || name.matches("(?s).*[\r\n,].*")) {
-            throw new IllegalArgumentException("Mã/tên không được chứa dấu phẩy hoặc xuống dòng");
-        }
-        if (!Double.isFinite(unitPrice) || unitPrice <= 0
-                || !Double.isFinite(unitPrice * quantity)) {
-            throw new IllegalArgumentException("Đơn giá phải là số hữu hạn lớn hơn 0, thành tiền không tràn số");
+        if (unitPrice <= 0) {
+            throw new IllegalArgumentException("Đơn giá phải lớn hơn 0");
         }
         if (quantity < 0) {
             throw new IllegalArgumentException("Số lượng không được âm");
@@ -44,7 +39,7 @@ public class Product {
     }
 
     public String toCsv() {
-        // Double.toString dùng dấu chấm độc lập locale, không gây nhầm dấu phân cách CSV.
+        // Double.toString dùng dấu chấm thập phân, không phụ thuộc locale của máy.
         return code + "," + name + "," + Double.toString(unitPrice) + "," + quantity;
     }
 

@@ -64,7 +64,8 @@ public class AuctionServiceImpl extends UnicastRemoteObject implements AuctionSe
     }
 
     private void notifyAll(String product, String bidder, double amount, String previous) {
-        bidders.forEach((name, callback) -> {
+        for (String name : bidders.keySet()) {
+            BidderCallback callback = bidders.get(name);
             try {
                 if (name.equals(previous)) {
                     callback.onOutbid(product, bidder, amount);
@@ -75,7 +76,7 @@ public class AuctionServiceImpl extends UnicastRemoteObject implements AuctionSe
                 bidders.remove(name);
                 System.out.println("[Server] Client " + name + " mất kết nối");
             }
-        });
+        }
     }
 
     @Override

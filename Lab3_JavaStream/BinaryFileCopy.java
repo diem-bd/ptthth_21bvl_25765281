@@ -2,12 +2,9 @@ package Lab3_JavaStream;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 
 public class BinaryFileCopy {
     private static final int BUFFER_SIZE = 8192;
@@ -18,35 +15,25 @@ public class BinaryFileCopy {
             return;
         }
 
-        try {
-            Path source = Path.of(args[0]);
-            Path target = Path.of(args[1]);
-            if (source.toAbsolutePath().normalize().equals(target.toAbsolutePath().normalize())
-                    || (Files.exists(target) && Files.isSameFile(source, target))) {
-                System.err.println("Nguồn và đích phải là hai tệp khác nhau.");
-                return;
+        long totalBytes = 0;
+
+        try (BufferedInputStream input = new BufferedInputStream(new FileInputStream(args[0]));
+             BufferedOutputStream output = new BufferedOutputStream(new FileOutputStream(args[1]))) {
+
+            byte[] buffer = new byte[BUFFER_SIZE];
+            int bytesRead;
+
+            while ((bytesRead = input.read(buffer)) != -1) {
+                // Lần đọc cuối thường ngắn hơn buffer: chỉ ghi đúng bytesRead byte.
+                output.write(buffer, 0, bytesRead);
+                totalBytes += bytesRead;
             }
 
-            long totalBytes = 0;
-            // CREATE_NEW tránh ghi đè ảnh có sẵn khi nhập nhầm tên đích.
-            try (InputStream input = new BufferedInputStream(Files.newInputStream(source));
-                 OutputStream output = new BufferedOutputStream(Files.newOutputStream(
-                         target, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE))) {
-                byte[] buffer = new byte[BUFFER_SIZE];
-                int bytesRead;
-                while ((bytesRead = input.read(buffer)) != -1) {
-                    // Lần đọc cuối thường ngắn hơn buffer: chỉ ghi bytesRead byte.
-                    output.write(buffer, 0, bytesRead);
-                    totalBytes += bytesRead;
-                }
-            }
-            System.out.println("Nguồn: " + source);
-            System.out.println("Đích: " + target);
+            System.out.println("Nguồn: " + args[0]);
+            System.out.println("Đích: " + args[1]);
             System.out.println("Đã sao chép " + totalBytes + " byte.");
-            System.out.println("Kích thước nguồn/đích: " + Files.size(source) + "/" + Files.size(target));
-            System.out.println("Nội dung giống nhau: " + (Files.mismatch(source, target) == -1));
-        } catch (IOException | IllegalArgumentException e) {
-            System.err.println("Sao chép thất bại [" + args[0] + " -> " + args[1] + "]: " + e.getMessage());
+        } catch (IOException e) {
+            System.err.println("Sao chép thất bại: " + e.getMessage());
         }
     }
 }

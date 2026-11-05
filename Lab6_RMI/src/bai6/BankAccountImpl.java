@@ -20,7 +20,7 @@ public class BankAccountImpl extends UnicastRemoteObject implements BankAccount 
 
     @Override
     public synchronized void deposit(double amount) throws RemoteException {
-        if (!Double.isFinite(amount) || amount <= 0) {
+        if (amount <= 0) {
             throw new RemoteException("Số tiền nạp phải lớn hơn 0");
         }
         balance += amount;
@@ -29,7 +29,7 @@ public class BankAccountImpl extends UnicastRemoteObject implements BankAccount 
 
     @Override
     public synchronized boolean withdraw(double amount) throws RemoteException {
-        if (!Double.isFinite(amount) || amount <= 0) {
+        if (amount <= 0) {
             throw new RemoteException("Số tiền rút phải lớn hơn 0");
         }
         if (amount > balance) {
