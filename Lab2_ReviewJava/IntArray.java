@@ -1,8 +1,5 @@
 package Lab2_ReviewJava;
 
-import java.util.Arrays;
-import java.util.Scanner;
-
 public class IntArray {
     private int[] a;
     private int size;
@@ -12,17 +9,6 @@ public class IntArray {
         this.capacity = capacity;
         this.a = new int[capacity];
         this.size = 0;
-    }
-
-    public void nhapMang(Scanner sc) {
-        System.out.print("Nhập số lượng phần tử ban đầu (<= " + capacity + "): ");
-        int n = Integer.parseInt(sc.nextLine());
-        if (n > capacity) n = capacity;
-        this.size = n;
-        for (int i = 0; i < n; i++) {
-            System.out.printf("a[%d] = ", i);
-            a[i] = Integer.parseInt(sc.nextLine());
-        }
     }
 
     public void xuatMang() {

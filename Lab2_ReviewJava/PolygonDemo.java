@@ -55,10 +55,6 @@ class CoordinatePolygon implements Polygon {
         this.vertices = new ArrayList<>(vertices);
     }
 
-    public List<Point> getVertices() {
-        return vertices;
-    }
-
     @Override
     public double perimeter() {
         double p = 0;
@@ -289,11 +285,9 @@ public class PolygonDemo {
         while (true) {
             System.out.print(prompt);
             try {
-                double value = Double.parseDouble(scanner.nextLine().trim());
-                if (!Double.isFinite(value)) throw new NumberFormatException();
-                return value;
+                return Double.parseDouble(scanner.nextLine().trim());
             } catch (NumberFormatException e) {
-                System.out.println("Vui lòng nhập một số hữu hạn, dùng dấu chấm cho phần thập phân.");
+                System.out.println("Vui lòng nhập một số, dùng dấu chấm cho phần thập phân.");
             }
         }
     }

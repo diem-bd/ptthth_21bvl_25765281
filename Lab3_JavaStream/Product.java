@@ -29,11 +29,6 @@ public class Product {
         this.quantity = quantity;
     }
 
-    public String getCode() { return code; }
-    public String getName() { return name; }
-    public double getUnitPrice() { return unitPrice; }
-    public int getQuantity() { return quantity; }
-
     public double inventoryValue() {
         return unitPrice * quantity;
     }
