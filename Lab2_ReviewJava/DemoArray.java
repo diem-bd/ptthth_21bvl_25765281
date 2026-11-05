@@ -1,21 +1,16 @@
 package Lab2_ReviewJava;
 
+import java.util.Scanner;
+
 public class DemoArray {
     public static void main(String[] args) {
         System.out.println("=== DEMO BÀI 2: MẢNG SỐ NGUYÊN & RADIX SORT ===");
+        Scanner sc = new Scanner(System.in);
         IntArray arr = new IntArray(20);
 
-        // Khởi tạo các phần tử mẫu
-        arr.themVaoCuoi(170);
-        arr.themVaoCuoi(45);
-        arr.themVaoCuoi(75);
-        arr.themVaoCuoi(90);
-        arr.themVaoCuoi(802);
-        arr.themVaoCuoi(24);
-        arr.themVaoCuoi(2);
-        arr.themVaoCuoi(66);
-
-        System.out.println("1. Mảng ban đầu:");
+        // 1. Đề yêu cầu: "Khởi tạo và nhập giá trị cho mảng"
+        System.out.println("1. Nhập mảng từ bàn phím:");
+        arr.nhapMang(sc);
         arr.xuatMang();
 
         System.out.println("\n2. Thêm 999 vào đầu, 111 vào cuối, 555 vào vị trí thứ 3:");
