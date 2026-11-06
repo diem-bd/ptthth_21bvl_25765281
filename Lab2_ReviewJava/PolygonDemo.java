@@ -3,7 +3,6 @@ package Lab2_ReviewJava;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Objects;
 import java.util.Scanner;
 
 interface Polygon {
@@ -23,19 +22,6 @@ class Point {
         double dx = this.x - other.x;
         double dy = this.y - other.y;
         return Math.sqrt(dx * dx + dy * dy);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Point)) return false;
-        Point p = (Point) o;
-        return Math.abs(this.x - p.x) < 1e-6 && Math.abs(this.y - p.y) < 1e-6;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(x, y);
     }
 
     @Override
@@ -80,26 +66,53 @@ class CoordinatePolygon implements Polygon {
 
     public boolean isSameAs(CoordinatePolygon other) {
         if (other == null || this.vertices.size() != other.vertices.size()) return false;
-        // So sánh hai đa giác có giống nhau: cùng số đỉnh và các cạnh tương ứng dài bằng nhau.
-        // Cho phép tịnh tiến (khác vị trí) và đảo chiều liệt kê đỉnh.
         int n = vertices.size();
+        // Hai đa giác "giống nhau" (bằng nhau về hình dạng và kích thước) nếu tồn tại phép
+        // tịnh tiến + quay + lật biến đa giác này thành đa giác kia. Chỉ so sánh độ dài cạnh
+        // là chưa đủ: hình vuông và hình thoi có thể có bốn cạnh bằng nhau nhưng khác hình.
+        // Cách làm: đưa mỗi đa giác về hệ trục riêng (gốc là đỉnh đầu, trục x theo cạnh đầu),
+        // sau đó so sánh toạ độ từng đỉnh. Thử mọi đỉnh bắt đầu và cả hai chiều duyệt.
+        double[][] goc = chuanHoa(0, 1);
+        if (goc == null) return false;
+        double canhDau = vertices.get(0).distance(vertices.get(1));
         for (int start = 0; start < n; start++) {
-            for (int direction : new int[] {1, -1}) {
-                boolean matches = true;
-                for (int i = 0; i < n; i++) {
-                    double a = vertices.get(i).distance(vertices.get((i + 1) % n));
-                    int nextIndex = Math.floorMod(start + direction * (i + 1), n);
-                    double b = other.vertices.get(Math.floorMod(start + direction * i, n))
-                            .distance(other.vertices.get(nextIndex));
-                    if (Math.abs(a - b) > 1e-6) {
-                        matches = false;
-                        break;
+            for (int direction = 1; direction >= -1; direction -= 2) {
+                double canhDauKhac = other.vertices.get(start)
+                        .distance(other.vertices.get(Math.floorMod(start + direction, n)));
+                if (Math.abs(canhDau - canhDauKhac) > 1e-6) continue;
+                double[][] khac = other.chuanHoa(start, direction);
+                if (khac == null) continue;
+                boolean khop = true;
+                for (int i = 0; i < n && khop; i++) {
+                    if (Math.abs(goc[i][0] - khac[i][0]) > 1e-6
+                            || Math.abs(goc[i][1] - khac[i][1]) > 1e-6) {
+                        khop = false;
                     }
                 }
-                if (matches) return true;
+                if (khop) return true;
             }
         }
         return false;
+    }
+
+    /** Toạ độ các đỉnh sau khi dời gốc về đỉnh start và quay cạnh đầu về trục x. */
+    private double[][] chuanHoa(int start, int direction) {
+        int n = vertices.size();
+        Point p0 = vertices.get(start);
+        Point p1 = vertices.get(Math.floorMod(start + direction, n));
+        double ux = p1.x - p0.x;
+        double uy = p1.y - p0.y;
+        double mau = ux * ux + uy * uy;
+        if (mau < 1e-18) return null;
+        double[][] ketQua = new double[n][2];
+        for (int i = 0; i < n; i++) {
+            Point p = vertices.get(Math.floorMod(start + direction * i, n));
+            double dx = p.x - p0.x;
+            double dy = p.y - p0.y;
+            ketQua[i][0] = (dx * ux + dy * uy) / mau;
+            ketQua[i][1] = (dy * ux - dx * uy) / mau;
+        }
+        return ketQua;
     }
 }
 
@@ -150,7 +163,11 @@ class Quadrilateral implements Polygon {
 
     @Override
     public double area() {
-        // Diện tích xấp xỉ theo công thức Brahmagupta nếu là tứ giác nội tiếp
+        // Với một tứ giác chỉ biết bốn cạnh thì diện tích KHÔNG xác định duy nhất
+        // (cùng bốn cạnh có thể có nhiều hình khác nhau). Công thức Brahmagupta chỉ đúng
+        // cho tứ giác nội tiếp và đó cũng là diện tích lớn nhất có thể.
+        // Lớp con cụ thể (Rectangle, Square...) luôn ghi đè area() bằng công thức chính xác,
+        // nên giá trị dưới đây chỉ là trường hợp tứ giác nội tiếp - đã ghi rõ khi in ra.
         double p = perimeter() / 2.0;
         return Math.sqrt(Math.max(0, (p - a) * (p - b) * (p - c) * (p - d)));
     }
@@ -302,8 +319,13 @@ public class PolygonDemo {
 
     private static int readInt(Scanner scanner, String prompt, int min, int max) {
         while (true) {
-            double value = readNumber(scanner, prompt);
-            if (value >= min && value <= max && value == Math.rint(value)) return (int) value;
+            System.out.print(prompt);
+            try {
+                int value = Integer.parseInt(scanner.nextLine().trim());
+                if (value >= min && value <= max) return value;
+            } catch (NumberFormatException e) {
+                // rơi xuống dưới để in lại hướng dẫn
+            }
             System.out.printf("Nhập số nguyên từ %d đến %d.%n", min, max);
         }
     }

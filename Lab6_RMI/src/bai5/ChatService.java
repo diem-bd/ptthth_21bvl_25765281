@@ -3,12 +3,14 @@ package bai5;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 
+/**
+ * Bài 5: chat 1-1 giữa client và server qua RMI.
+ * Đề yêu cầu đúng một phương thức void sendMessage(String message).
+ */
 public interface ChatService extends Remote {
-    /** Đăng ký client để nhận tin nhắn (RMI callback hai chiều). */
-    void register(String nickname, ChatCallback callback) throws RemoteException;
+    /** Client gửi tin nhắn tới server. */
+    void sendMessage(String message) throws RemoteException;
 
-    /** Gửi tin nhắn tới server; server phản hồi lại người gửi. */
-    String sendMessage(String nickname, String message) throws RemoteException;
-
-    String getHistory() throws RemoteException;
+    /** Client lấy phản hồi mới nhất của server để hiển thị. */
+    String getLastReply() throws RemoteException;
 }

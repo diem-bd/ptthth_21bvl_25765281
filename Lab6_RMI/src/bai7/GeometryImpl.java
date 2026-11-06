@@ -9,8 +9,8 @@ public class GeometryImpl extends UnicastRemoteObject implements Geometry {
     }
 
     private static void check(double value, String name) throws RemoteException {
-        if (value <= 0) {
-            throw new RemoteException(name + " phải lớn hơn 0");
+        if (!Double.isFinite(value) || value <= 0) {
+            throw new RemoteException(name + " phải là số hữu hạn lớn hơn 0");
         }
     }
 

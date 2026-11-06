@@ -13,4 +13,7 @@ public interface AuctionService extends Remote {
     double currentPrice(String product) throws RemoteException;
 
     void register(String bidder, BidderCallback callback) throws RemoteException;
+
+    /** Hủy đăng ký khi client thoát, để server không còn giữ callback đã chết. */
+    void unregister(String bidder) throws RemoteException;
 }

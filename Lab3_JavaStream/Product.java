@@ -14,14 +14,24 @@ public class Product {
         if (code == null || code.isBlank()) {
             throw new IllegalArgumentException("Mã không được rỗng");
         }
+        if (code.contains(",")) {
+            throw new IllegalArgumentException("Mã không được chứa dấu phẩy");
+        }
         if (name == null || name.isBlank()) {
             throw new IllegalArgumentException("Tên không được rỗng");
         }
-        if (unitPrice <= 0) {
-            throw new IllegalArgumentException("Đơn giá phải lớn hơn 0");
+        if (name.contains(",")) {
+            // CSV đơn giản của bài tách cột bằng dấu phẩy, nên tên chứa dấu phẩy sẽ làm hỏng tệp.
+            throw new IllegalArgumentException("Tên không được chứa dấu phẩy");
+        }
+        if (!Double.isFinite(unitPrice) || unitPrice <= 0) {
+            throw new IllegalArgumentException("Đơn giá phải là số hữu hạn lớn hơn 0");
         }
         if (quantity < 0) {
             throw new IllegalArgumentException("Số lượng không được âm");
+        }
+        if (!Double.isFinite(unitPrice * quantity)) {
+            throw new IllegalArgumentException("Thành tiền vượt giới hạn số thực");
         }
         this.code = code.trim();
         this.name = name.trim();

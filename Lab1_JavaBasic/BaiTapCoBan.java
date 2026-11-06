@@ -19,7 +19,7 @@ public class BaiTapCoBan {
         System.out.print("Vui lòng nhập số hạng thứ hai: ");
         int soB = Integer.parseInt(scanner.nextLine());
         int kq = soA + soB;
-        System.out.println("Tính tổng [" + soA + " + " + soB + " = " + kq);
+        System.out.println("Tính tổng [" + soA + " + " + soB + " = " + kq + "]");
     }
 
     public static void kiemTraChanLe(Scanner scanner) {

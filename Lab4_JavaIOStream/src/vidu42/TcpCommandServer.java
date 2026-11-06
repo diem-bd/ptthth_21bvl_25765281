@@ -15,7 +15,13 @@ public class TcpCommandServer {
     private static final int DEFAULT_PORT = 5000;
 
     public static void main(String[] args) {
-        int port = args.length > 0 ? Integer.parseInt(args[0]) : DEFAULT_PORT;
+        int port;
+        try {
+            port = args.length > 0 ? Integer.parseInt(args[0]) : DEFAULT_PORT;
+        } catch (NumberFormatException e) {
+            System.err.println("Cổng phải là số nguyên: " + args[0]);
+            return;
+        }
         try (ServerSocket server = new ServerSocket(port)) {
             System.out.println("TCP server listening on port " + port);
             while (true) {
@@ -39,7 +45,7 @@ public class TcpCommandServer {
             while ((request = in.readLine()) != null) {
                 String response = process(request);
                 out.println(response);
-                if (request.equalsIgnoreCase("QUIT")) break;
+                if (request.trim().equalsIgnoreCase("QUIT")) break;
             }
         }
     }

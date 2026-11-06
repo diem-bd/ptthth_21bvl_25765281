@@ -11,8 +11,17 @@ public class StudentDemo {
         List<Student> list = new ArrayList<>();
 
         // Đề Bài 5: "Nhập vào n sinh viên (n là số lượng sinh viên được nhập vào từ bàn phím)"
-        System.out.print("Nhập số lượng sinh viên n = ");
-        int n = Integer.parseInt(sc.nextLine());
+        int n;
+        while (true) {
+            System.out.print("Nhập số lượng sinh viên n = ");
+            try {
+                n = Integer.parseInt(sc.nextLine().trim());
+                if (n > 0) break;
+                System.out.println("Số lượng sinh viên phải lớn hơn 0.");
+            } catch (NumberFormatException e) {
+                System.out.println("Vui lòng nhập một số nguyên.");
+            }
+        }
         for (int i = 0; i < n; i++) {
             System.out.println("--- Sinh viên thứ " + (i + 1) + " ---");
             Student s = new Student();

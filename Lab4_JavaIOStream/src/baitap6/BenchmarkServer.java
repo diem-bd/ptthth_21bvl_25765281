@@ -44,8 +44,8 @@ public class BenchmarkServer {
         udpThread.setDaemon(true);
         udpThread.start();
 
-        // Thread 2: Chạy TCP Echo Server với Thread Pool
-        ExecutorService tcpPool = Executors.newCachedThreadPool();
+        // Thread 2: Chạy TCP Echo Server với thread pool giới hạn số luồng
+        ExecutorService tcpPool = Executors.newFixedThreadPool(10);
         try (ServerSocket serverSocket = new ServerSocket(TCP_PORT)) {
             System.out.println("TCP Benchmark Server listening on port " + TCP_PORT);
 

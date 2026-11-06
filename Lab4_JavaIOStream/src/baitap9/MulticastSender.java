@@ -16,12 +16,17 @@ public class MulticastSender {
         try (MulticastSocket socket = new MulticastSocket();
              BufferedReader console = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8))) {
 
-            NetworkInterface netIf = MulticastReceiver.getPreferredInterface();
-            if (netIf != null) {
-                socket.setNetworkInterface(netIf);
-                System.out.println("Outgoing Network Interface: " + netIf.getName() + " (" + netIf.getDisplayName() + ")");
+            // Chỉ định card mạng khi cần: -Dmcast.if=en0
+            NetworkInterface netIf = MulticastReceiver.getPreferredInterface(
+                    System.getProperty("mcast.if"));
+            if (netIf == null) {
+                System.err.println("Không tìm được card mạng để gửi multicast.");
+                return;
             }
-            socket.setTimeToLive(1); // Local subnet/loopback
+            socket.setNetworkInterface(netIf);
+            System.out.println("Outgoing Network Interface: " + netIf.getName()
+                    + " (" + netIf.getDisplayName() + ")");
+            socket.setTimeToLive(1); // Chỉ trong mạng cục bộ
 
             InetAddress group = InetAddress.getByName(MulticastReceiver.GROUP_ADDRESS);
 

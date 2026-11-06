@@ -34,8 +34,9 @@ public class FlightClient {
                         String cancelFlight = in.readLine().trim().toUpperCase();
                         System.out.print("Số ghế hủy: ");
                         int cancel = Integer.parseInt(in.readLine().trim());
-                        flight.cancelBooking(cancelFlight, cancel);
-                        System.out.println("Đã hủy, còn " + flight.availableSeats(cancelFlight) + " ghế");
+                        System.out.println(flight.cancelBooking(cancelFlight, cancel)
+                                ? "Đã hủy, còn " + flight.availableSeats(cancelFlight) + " ghế"
+                                : "Hủy thất bại: số ghế hủy vượt số đã đặt");
                         break;
                     case "3":
                         System.out.print("Mã chuyến: ");

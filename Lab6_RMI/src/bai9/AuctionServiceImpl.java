@@ -46,26 +46,32 @@ public class AuctionServiceImpl extends UnicastRemoteObject implements AuctionSe
     }
 
     @Override
-    public synchronized boolean placeBid(String product, String bidder, double amount) throws RemoteException {
-        Item item = items.get(product);
-        if (item == null) throw new RemoteException("Không có sản phẩm " + product);
-        if (!Double.isFinite(amount) || amount <= 0) throw new RemoteException("Giá phải lớn hơn 0");
-        if (amount <= item.highestPrice) {
-            System.out.printf("[Server] Từ chối %,.0f của %s (phải > %,.0f)%n",
-                    amount, bidder, item.highestPrice);
-            return false;
+    public boolean placeBid(String product, String bidder, double amount) throws RemoteException {
+        String previous;
+        synchronized (this) {
+            Item item = items.get(product);
+            if (item == null) throw new RemoteException("Không có sản phẩm " + product);
+            if (!Double.isFinite(amount) || amount <= 0) throw new RemoteException("Giá phải lớn hơn 0");
+            if (amount <= item.highestPrice) {
+                System.out.printf("[Server] Từ chối %,.0f của %s (phải > %,.0f)%n",
+                        amount, bidder, item.highestPrice);
+                return false;
+            }
+            previous = item.highestBidder;
+            item.highestPrice = amount;
+            item.highestBidder = bidder;
+            System.out.printf("[Server] %s đặt %,.0f cho %s%n", bidder, amount, product);
         }
-        String previous = item.highestBidder;
-        item.highestPrice = amount;
-        item.highestBidder = bidder;
-        System.out.printf("[Server] %s đặt %,.0f cho %s%n", bidder, amount, product);
-        notifyAll(product, bidder, amount, previous);
+        // Thông báo callback ra NGOÀI khối synchronized: lời gọi RMI tới client có thể chậm
+        // hoặc client gọi ngược lại server, giữ khóa khi gọi sẽ dễ gây treo.
+        notifyBidders(product, bidder, amount, previous);
         return true;
     }
 
-    private void notifyAll(String product, String bidder, double amount, String previous) {
-        for (String name : bidders.keySet()) {
-            BidderCallback callback = bidders.get(name);
+    private void notifyBidders(String product, String bidder, double amount, String previous) {
+        for (Map.Entry<String, BidderCallback> entry : bidders.entrySet()) {
+            String name = entry.getKey();
+            BidderCallback callback = entry.getValue();
             try {
                 if (name.equals(previous)) {
                     callback.onOutbid(product, bidder, amount);
@@ -73,7 +79,7 @@ public class AuctionServiceImpl extends UnicastRemoteObject implements AuctionSe
                     callback.onNewBid(product, bidder, amount);
                 }
             } catch (RemoteException e) {
-                bidders.remove(name);
+                bidders.remove(name, callback);
                 System.out.println("[Server] Client " + name + " mất kết nối");
             }
         }
@@ -90,5 +96,11 @@ public class AuctionServiceImpl extends UnicastRemoteObject implements AuctionSe
     public synchronized void register(String bidder, BidderCallback callback) throws RemoteException {
         bidders.put(bidder, callback);
         System.out.println("[Server] " + bidder + " tham gia đấu giá");
+    }
+
+    @Override
+    public synchronized void unregister(String bidder) {
+        bidders.remove(bidder);
+        System.out.println("[Server] " + bidder + " rời phiên đấu giá");
     }
 }

@@ -97,6 +97,11 @@ public class CalculatorServer {
         } catch (NumberFormatException e) {
             return "ERR INVALID_NUMBER";
         }
+        // Double.parseDouble nhận cả "NaN" và "Infinity" nên phải chặn riêng,
+        // nếu không sẽ trả OK NaN cho một phép tính không có nghĩa.
+        if (!Double.isFinite(a) || !Double.isFinite(b)) {
+            return "ERR INVALID_NUMBER";
+        }
 
         double result;
         switch (op) {
@@ -119,7 +124,10 @@ public class CalculatorServer {
                 return "ERR UNSUPPORTED_OPERATOR";
         }
 
-        if (result == Math.floor(result) && !Double.isInfinite(result) && Math.abs(result) < Long.MAX_VALUE) {
+        if (!Double.isFinite(result)) {
+            return "ERR NUMBER_OVERFLOW";
+        }
+        if (result == Math.floor(result) && Math.abs(result) < Long.MAX_VALUE) {
             return "OK " + (long) result;
         } else {
             return "OK " + result;

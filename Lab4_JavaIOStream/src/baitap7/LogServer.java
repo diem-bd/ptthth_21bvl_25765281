@@ -12,7 +12,6 @@ import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
@@ -22,15 +21,20 @@ public class LogServer {
     private static final String LOG_DIR = "data/logs";
     private static final Pattern CLIENT_ID_PATTERN = Pattern.compile("^[a-zA-Z0-9_-]+$");
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-    private static final ConcurrentHashMap<String, Object> clientLocks = new ConcurrentHashMap<>();
 
     public static void main(String[] args) {
-        int port = args.length > 0 ? Integer.parseInt(args[0]) : PORT;
+        int port;
+        try {
+            port = args.length > 0 ? Integer.parseInt(args[0]) : PORT;
+        } catch (NumberFormatException e) {
+            System.err.println("Cổng phải là số nguyên: " + args[0]);
+            return;
+        }
 
-        // Tạo thư mục lưu logs nếu chưa có
         File dir = new File(LOG_DIR);
-        if (!dir.exists()) {
-            dir.mkdirs();
+        if (!dir.exists() && !dir.mkdirs()) {
+            System.err.println("Không tạo được thư mục log: " + dir.getAbsolutePath());
+            return;
         }
 
         ExecutorService pool = Executors.newFixedThreadPool(20);
@@ -61,7 +65,11 @@ public class LogServer {
             String line;
             while ((line = in.readLine()) != null) {
                 String trimmed = line.trim();
-                if (trimmed.isEmpty()) continue;
+                // Mỗi yêu cầu đều phải có phản hồi, nếu không client sẽ chờ vô hạn.
+                if (trimmed.isEmpty()) {
+                    out.println("ERR EMPTY_MESSAGE");
+                    continue;
+                }
 
                 if (trimmed.equalsIgnoreCase("QUIT")) {
                     out.println("OK BYE");
@@ -74,7 +82,6 @@ public class LogServer {
                         out.println("ERR INVALID_CLIENT_ID");
                     } else {
                         clientId = candidateId;
-                        clientLocks.putIfAbsent(clientId, new Object());
                         out.println("OK WELCOME " + clientId);
                         System.out.println("Client identified: " + clientId + " (" + remote + ")");
                     }
@@ -82,10 +89,13 @@ public class LogServer {
                     if (clientId == null) {
                         out.println("ERR MUST_HELLO_FIRST");
                     } else {
-                        // Ghi log vào file
                         String logMessage = trimmed.startsWith("MSG ") ? trimmed.substring(4) : trimmed;
-                        writeLog(clientId, remote, logMessage);
-                        out.println("OK LOGGED");
+                        // Chỉ xác nhận đã ghi khi việc ghi thực sự thành công.
+                        if (writeLog(clientId, remote, logMessage)) {
+                            out.println("OK LOGGED");
+                        } else {
+                            out.println("ERR LOG_WRITE_FAILED");
+                        }
                     }
                 }
             }
@@ -94,21 +104,28 @@ public class LogServer {
         } finally {
             try {
                 socket.close();
-            } catch (IOException ignored) {}
+            } catch (IOException ignored) {
+            }
             System.out.println("Client disconnected: " + remote + (clientId != null ? " [" + clientId + "]" : ""));
         }
     }
 
-    private static void writeLog(String clientId, String remoteAddress, String content) {
-        Object lock = clientLocks.computeIfAbsent(clientId, k -> new Object());
-        synchronized (lock) {
-            File logFile = new File(LOG_DIR, clientId + ".txt");
-            try (PrintWriter fw = new PrintWriter(new FileWriter(logFile, StandardCharsets.UTF_8, true))) {
-                String timestamp = LocalDateTime.now().format(FORMATTER);
-                fw.println("[" + timestamp + "] [" + remoteAddress + "] " + content);
-            } catch (IOException e) {
-                System.err.println("Error writing log for " + clientId + ": " + e.getMessage());
-            }
+    /**
+     * Ghi thêm một dòng vào data/logs/<clientId>.txt.
+     * synchronized trên cả lớp là đủ cho bài lab: mọi client ghi nối tiếp nhau,
+     * không cần map ổ khoá riêng cho từng client.
+     *
+     * @return true nếu ghi thành công, false nếu có lỗi vào/ra.
+     */
+    private static synchronized boolean writeLog(String clientId, String remoteAddress, String content) {
+        File logFile = new File(LOG_DIR, clientId + ".txt");
+        try (PrintWriter fw = new PrintWriter(new FileWriter(logFile, StandardCharsets.UTF_8, true))) {
+            String timestamp = LocalDateTime.now().format(FORMATTER);
+            fw.println("[" + timestamp + "] [" + remoteAddress + "] " + content);
+            return !fw.checkError();
+        } catch (IOException e) {
+            System.err.println("Error writing log for " + clientId + ": " + e.getMessage());
+            return false;
         }
     }
 }

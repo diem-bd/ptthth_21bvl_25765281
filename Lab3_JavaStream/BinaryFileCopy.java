@@ -5,6 +5,8 @@ import java.io.BufferedOutputStream;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 public class BinaryFileCopy {
     private static final int BUFFER_SIZE = 8192;
@@ -16,6 +18,24 @@ public class BinaryFileCopy {
         }
 
         long totalBytes = 0;
+
+        // Nếu nguồn và đích là cùng một tệp, mở đầu ra sẽ làm rỗng tệp nguồn trước khi đọc.
+        Path nguon = Path.of(args[0]);
+        Path dich = Path.of(args[1]);
+        try {
+            boolean cungTep = nguon.toAbsolutePath().normalize()
+                    .equals(dich.toAbsolutePath().normalize());
+            if (!cungTep && Files.exists(dich)) {
+                cungTep = Files.isSameFile(nguon, dich);
+            }
+            if (cungTep) {
+                System.err.println("Nguồn và đích là cùng một tệp, không thể sao chép.");
+                return;
+            }
+        } catch (IOException e) {
+            System.err.println("Không kiểm tra được đường dẫn: " + e.getMessage());
+            return;
+        }
 
         try (BufferedInputStream input = new BufferedInputStream(new FileInputStream(args[0]));
              BufferedOutputStream output = new BufferedOutputStream(new FileOutputStream(args[1]))) {

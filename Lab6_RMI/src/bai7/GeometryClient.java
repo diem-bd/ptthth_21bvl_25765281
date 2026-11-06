@@ -37,10 +37,14 @@ public class GeometryClient {
             } catch (NumberFormatException e) {
                 System.out.println("Vui lòng nhập số.");
             } catch (RemoteException e) {
-                // RMI bọc lỗi gốc trong RemoteException; lấy dòng cuối cho gọn.
-                String message = e.getMessage() == null ? e.toString() : e.getMessage();
-                String[] lines = message.split("\\R");
-                System.out.println("Server từ chối: " + lines[lines.length - 1].replace("java.rmi.RemoteException: ", ""));
+                // RMI bọc lỗi gốc trong RemoteException nên thông báo có thể nhiều dòng;
+                // lấy dòng cuối và bỏ tiền tố lớp ngoại lệ để hiện đúng nội dung lỗi.
+                String message = e.getMessage() == null ? "lỗi không xác định" : e.getMessage().trim();
+                message = message.substring(message.lastIndexOf('\n') + 1).trim();
+                if (message.startsWith("java.rmi.RemoteException:")) {
+                    message = message.substring("java.rmi.RemoteException:".length()).trim();
+                }
+                System.out.println("Server từ chối: " + message);
             }
         }
     }

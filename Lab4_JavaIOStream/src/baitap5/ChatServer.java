@@ -41,9 +41,11 @@ public class ChatServer {
         String remote = socket.getRemoteSocketAddress().toString();
         System.out.println("New connection from: " + remote);
         String clientNick = null;
+        PrintWriter writer = null;
 
         try (BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
              PrintWriter out = new PrintWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8), true)) {
+            writer = out;
 
             out.println("INFO Please register your nickname using: NICK <username>");
 
@@ -61,17 +63,21 @@ public class ChatServer {
                     String desiredNick = trimmed.substring(5).trim();
                     if (desiredNick.isEmpty() || desiredNick.contains(" ")) {
                         out.println("ERR INVALID_NICKNAME");
-                    } else if (activeClients.containsKey(desiredNick)) {
-                        out.println("ERR NICK_TAKEN");
                     } else {
-                        if (clientNick != null) {
-                            activeClients.remove(clientNick);
+                        // putIfAbsent là một phép nguyên tử: hai client cùng lúc xin một nickname
+                        // thì chỉ đúng một người thắng, người kia nhận NICK_TAKEN.
+                        PrintWriter previous = activeClients.putIfAbsent(desiredNick, out);
+                        if (previous != null && previous != out) {
+                            out.println("ERR NICK_TAKEN");
+                        } else {
+                            if (clientNick != null && !clientNick.equals(desiredNick)) {
+                                activeClients.remove(clientNick, out);
+                            }
+                            clientNick = desiredNick;
+                            out.println("OK NICK_ACCEPTED " + clientNick);
+                            broadcast("[SYSTEM] " + clientNick + " joined the chat.", clientNick);
+                            System.out.println("Registered user: " + clientNick + " (" + remote + ")");
                         }
-                        clientNick = desiredNick;
-                        activeClients.put(clientNick, out);
-                        out.println("OK NICK_ACCEPTED " + clientNick);
-                        broadcast("[SYSTEM] " + clientNick + " joined the chat.", clientNick);
-                        System.out.println("Registered user: " + clientNick + " (" + remote + ")");
                     }
                 } else if (trimmed.equalsIgnoreCase("USERS")) {
                     if (clientNick == null) {
@@ -96,7 +102,7 @@ public class ChatServer {
             System.out.println("Client disconnected abruptly: " + remote + " (" + e.getMessage() + ")");
         } finally {
             if (clientNick != null) {
-                activeClients.remove(clientNick);
+                activeClients.remove(clientNick, writer);
                 broadcast("[SYSTEM] " + clientNick + " left the chat.", null);
                 System.out.println("User removed: " + clientNick);
             }

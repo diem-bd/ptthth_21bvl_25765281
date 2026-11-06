@@ -1,27 +1,33 @@
 package vidu43;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.nio.charset.StandardCharsets;
-import java.time.LocalDateTime;
-import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+/**
+ * Ví dụ 4.3: phục vụ nhiều client đồng thời bằng ExecutorService.
+ * Phần giao thức và xử lý lệnh được TÁI SỬ DỤNG từ vidu42.TcpCommandServer,
+ * không sao chép lại: cùng một serve() chạy trong từng luồng của thread pool.
+ */
 public class MultiClientTcpServer {
     private static final int PORT = 5000;
     private static final int MAX_CLIENTS = 20;
 
     public static void main(String[] args) {
+        int port;
+        try {
+            port = args.length > 0 ? Integer.parseInt(args[0]) : PORT;
+        } catch (NumberFormatException e) {
+            System.err.println("Cổng phải là số nguyên: " + args[0]);
+            return;
+        }
         ExecutorService pool = Executors.newFixedThreadPool(MAX_CLIENTS);
 
-        try (ServerSocket server = new ServerSocket(PORT)) {
-            System.out.println("Multi-client server listening on port " + PORT + " (Thread Pool: " + MAX_CLIENTS + ")");
+        try (ServerSocket server = new ServerSocket(port)) {
+            System.out.println("Multi-client server listening on port " + port
+                    + " (Thread Pool: " + MAX_CLIENTS + ")");
 
             while (true) {
                 Socket socket = server.accept();
@@ -29,7 +35,7 @@ public class MultiClientTcpServer {
                     String client = String.valueOf(socket.getRemoteSocketAddress());
                     System.out.println("Connected: " + client);
                     try (socket) {
-                        serve(socket);
+                        vidu42.TcpCommandServer.serve(socket);
                     } catch (IOException e) {
                         System.err.println("Client " + client + " failed: " + e.getMessage());
                     } finally {
@@ -42,34 +48,5 @@ public class MultiClientTcpServer {
         } finally {
             pool.shutdown();
         }
-    }
-
-    private static void serve(Socket socket) throws IOException {
-        try (BufferedReader in = new BufferedReader(new InputStreamReader(
-                    socket.getInputStream(), StandardCharsets.UTF_8));
-             PrintWriter out = new PrintWriter(new OutputStreamWriter(
-                    socket.getOutputStream(), StandardCharsets.UTF_8), true)) {
-            String request;
-            while ((request = in.readLine()) != null) {
-                String response = process(request);
-                out.println(response);
-                if (request.equalsIgnoreCase("QUIT")) {
-                    break;
-                }
-            }
-        }
-    }
-
-    private static String process(String request) {
-        String trimmed = request.trim();
-        if (trimmed.equalsIgnoreCase("PING")) return "OK PONG";
-        if (trimmed.equalsIgnoreCase("TIME")) {
-            return "OK " + LocalDateTime.now();
-        }
-        if (trimmed.equalsIgnoreCase("QUIT")) return "OK BYE";
-        if (trimmed.regionMatches(true, 0, "UPPER ", 0, 6)) {
-            return "OK " + trimmed.substring(6).toUpperCase(Locale.ROOT);
-        }
-        return "ERR UNKNOWN_COMMAND";
     }
 }

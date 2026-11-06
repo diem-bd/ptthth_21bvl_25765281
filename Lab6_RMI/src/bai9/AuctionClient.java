@@ -37,46 +37,61 @@ public class AuctionClient {
                 new InputStreamReader(System.in, StandardCharsets.UTF_8));
         System.out.print("Biệt danh người đấu giá: ");
         String nickname = in.readLine().trim();
-        auction.register(nickname, new Listener(nickname));
-        while (true) {
-            System.out.println("\n1-Thêm sản phẩm (người bán)  2-Danh sách  3-Đặt giá  4-Giá hiện tại  0-Thoát");
-            System.out.print("Chọn: ");
-            String choice = in.readLine();
-            if (choice == null || choice.trim().equals("0")) break;
-            try {
-                switch (choice.trim()) {
-                    case "1":
-                        System.out.print("Tên sản phẩm: ");
-                        String name = in.readLine().trim();
-                        System.out.print("Giá khởi điểm: ");
-                        auction.addProduct(name, Double.parseDouble(in.readLine().trim()));
-                        System.out.println("Đã thêm sản phẩm.");
-                        break;
-                    case "2":
-                        System.out.print(auction.listProducts());
-                        break;
-                    case "3":
-                        System.out.print("Tên sản phẩm: ");
-                        String product = in.readLine().trim();
-                        System.out.print("Giá muốn trả: ");
-                        double price = Double.parseDouble(in.readLine().trim());
-                        System.out.println(auction.placeBid(product, nickname, price)
-                                ? "Đặt giá thành công."
-                                : "Đặt giá thất bại: phải cao hơn giá hiện tại.");
-                        break;
-                    case "4":
-                        System.out.print("Tên sản phẩm: ");
-                        System.out.printf("Giá hiện tại: %,.0f%n",
-                                auction.currentPrice(in.readLine().trim()));
-                        break;
-                    default:
-                        System.out.println("Chọn 0 đến 4.");
+
+        Listener listener = new Listener(nickname);
+        auction.register(nickname, listener);
+
+        try {
+            while (true) {
+                System.out.println("\n1-Thêm sản phẩm (người bán)  2-Danh sách  3-Đặt giá  4-Giá hiện tại  0-Thoát");
+                System.out.print("Chọn: ");
+                String choice = in.readLine();
+                if (choice == null || choice.trim().equals("0")) break;
+                try {
+                    switch (choice.trim()) {
+                        case "1":
+                            System.out.print("Tên sản phẩm: ");
+                            String name = in.readLine().trim();
+                            System.out.print("Giá khởi điểm: ");
+                            auction.addProduct(name, Double.parseDouble(in.readLine().trim()));
+                            System.out.println("Đã thêm sản phẩm.");
+                            break;
+                        case "2":
+                            System.out.print(auction.listProducts());
+                            break;
+                        case "3":
+                            System.out.print("Tên sản phẩm: ");
+                            String product = in.readLine().trim();
+                            System.out.print("Giá muốn trả: ");
+                            double price = Double.parseDouble(in.readLine().trim());
+                            System.out.println(auction.placeBid(product, nickname, price)
+                                    ? "Đặt giá thành công."
+                                    : "Đặt giá thất bại: phải cao hơn giá hiện tại.");
+                            break;
+                        case "4":
+                            System.out.print("Tên sản phẩm: ");
+                            System.out.printf("Giá hiện tại: %,.0f%n",
+                                    auction.currentPrice(in.readLine().trim()));
+                            break;
+                        default:
+                            System.out.println("Chọn 0 đến 4.");
+                    }
+                } catch (NumberFormatException e) {
+                    System.out.println("Vui lòng nhập số.");
+                } catch (RemoteException e) {
+                    System.out.println("Server từ chối: " + e.getMessage());
                 }
-            } catch (NumberFormatException e) {
-                System.out.println("Vui lòng nhập số.");
-            } catch (RemoteException e) {
-                System.out.println("Server từ chối: " + e.getMessage());
             }
+        } finally {
+            // Rời server và hủy xuất đối tượng callback: nếu không, RMI giữ thread không phải
+            // daemon và tiến trình client sẽ không thoát dù đã chọn 0.
+            try {
+                auction.unregister(nickname);
+            } catch (RemoteException ignored) {
+                // Server đã dừng: không cần báo lỗi khi đang thoát.
+            }
+            UnicastRemoteObject.unexportObject(listener, true);
+            System.out.println("Đã thoát phiên đấu giá.");
         }
     }
 }

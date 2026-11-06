@@ -13,6 +13,7 @@ public class MainBai2 {
         GiangVien gv2 = new GiangVien("ThS. Đỗ Thu Hà", 1988, "Đồng Nai", "GV102", "Công nghệ phần mềm", 8500000, 2.8);
 
         // 3. Hiển thị thông tin từng đối tượng
+        // hienThiThongTin() của SinhVien đã in kèm xếp loại, của GiangVien đã in kèm lương.
         System.out.println("--- Danh sách Sinh viên ---");
         sv1.hienThiThongTin();
         sv2.hienThiThongTin();
@@ -20,15 +21,5 @@ public class MainBai2 {
         System.out.println("\n--- Danh sách Giảng viên ---");
         gv1.hienThiThongTin();
         gv2.hienThiThongTin();
-
-        // 4. Đề yêu cầu: "Hiển thị xếp loại sinh viên"
-        System.out.println("\n--- Xếp loại sinh viên ---");
-        System.out.println(sv1.getHoTen() + ": " + sv1.xepLoai());
-        System.out.println(sv2.getHoTen() + ": " + sv2.xepLoai());
-
-        // 5. Đề yêu cầu: "Hiển thị lương giảng viên"
-        System.out.printf("%n--- Lương giảng viên ---%n");
-        System.out.printf("%s: %,.0f VNĐ%n", gv1.getHoTen(), gv1.tinhLuong());
-        System.out.printf("%s: %,.0f VNĐ%n", gv2.getHoTen(), gv2.tinhLuong());
     }
 }

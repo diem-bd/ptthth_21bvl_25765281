@@ -56,8 +56,16 @@ public class FileTransferServer {
 
             System.out.println("[" + remote + "] Requested file: '" + clientFilename + "', size: " + fileSize + " bytes, SHA256: " + clientSha256);
 
-            // 2. Kiểm tra ngăn chặn Path Traversal
-            if (clientFilename.contains("..") || clientFilename.contains("/") || clientFilename.contains("\\")) {
+            // 2. Kiểm tra dữ liệu đầu vào: kích thước âm/không hợp lý và path traversal.
+            if (fileSize < 0) {
+                System.err.println("[" + remote + "] Kích thước tệp không hợp lệ: " + fileSize);
+                out.writeUTF("ERR INVALID_SIZE");
+                return;
+            }
+            if (clientFilename.isBlank()
+                    || clientFilename.contains("..")
+                    || clientFilename.contains("/")
+                    || clientFilename.contains("\\")) {
                 System.err.println("[" + remote + "] Path traversal attack detected in: " + clientFilename);
                 out.writeUTF("ERR PATH_TRAVERSAL_DETECTED");
                 return;
@@ -91,6 +99,7 @@ public class FileTransferServer {
                 return;
             }
 
+            // File rỗng: không có byte nào để băm, digest.digest() vẫn cho hash của chuỗi rỗng.
             // 4. Kiểm tra mã băm SHA-256
             byte[] hashBytes = digest.digest();
             StringBuilder hashBuilder = new StringBuilder();

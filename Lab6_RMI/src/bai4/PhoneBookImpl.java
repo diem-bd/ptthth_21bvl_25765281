@@ -2,12 +2,13 @@ package bai4;
 
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.TreeMap;
 
 public class PhoneBookImpl extends UnicastRemoteObject implements PhoneBook {
-    // TreeMap để danh sách liệt kê theo thứ tự tên; synchronized vì RMI phục vụ nhiều luồng.
-    private final Map<String, String> contacts = new TreeMap<>();
+    // Đề yêu cầu lưu danh bạ bằng HashMap<String, String>.
+    // synchronized vì RMI có thể phục vụ nhiều lời gọi đồng thời.
+    private final Map<String, String> contacts = new HashMap<>();
 
     public PhoneBookImpl() throws RemoteException {
         super();
@@ -18,8 +19,8 @@ public class PhoneBookImpl extends UnicastRemoteObject implements PhoneBook {
         if (name == null || name.isBlank()) {
             throw new RemoteException("Tên không được rỗng");
         }
-        if (phone == null || !phone.matches("\\d{9,11}")) {
-            throw new RemoteException("Số điện thoại phải gồm 9-11 chữ số");
+        if (phone == null || phone.isBlank()) {
+            throw new RemoteException("Số điện thoại không được rỗng");
         }
         boolean existed = contacts.containsKey(name.trim());
         contacts.put(name.trim(), phone);

@@ -11,18 +11,26 @@ import java.nio.charset.StandardCharsets;
 public class ChatClient {
     public static void main(String[] args) {
         String host = args.length > 0 ? args[0] : "localhost";
-        int port = args.length > 1 ? Integer.parseInt(args[1]) : ChatServer.PORT;
-
+        int port;
         try {
-            Socket socket = new Socket(host, port);
-            BufferedReader serverIn = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
-            PrintWriter serverOut = new PrintWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8), true);
-            BufferedReader consoleIn = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
+            port = args.length > 1 ? Integer.parseInt(args[1]) : ChatServer.PORT;
+        } catch (NumberFormatException e) {
+            System.err.println("Port phải là số nguyên");
+            return;
+        }
+
+        try (Socket socket = new Socket(host, port);
+             BufferedReader serverIn = new BufferedReader(
+                     new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
+             PrintWriter serverOut = new PrintWriter(new OutputStreamWriter(
+                     socket.getOutputStream(), StandardCharsets.UTF_8), true);
+             BufferedReader consoleIn = new BufferedReader(
+                     new InputStreamReader(System.in, StandardCharsets.UTF_8))) {
 
             System.out.println("=== Connected to Chat Server (" + host + ":" + port + ") ===");
             System.out.println("Available commands: NICK <name>, USERS, MSG <message>, QUIT");
 
-            // Background thread to listen to incoming server messages and broadcasts
+            // Luồng nền chuyên đọc tin nhắn/broadcast từ server để không chặn việc gõ lệnh.
             Thread listenerThread = new Thread(() -> {
                 try {
                     String msg;
@@ -30,14 +38,12 @@ public class ChatClient {
                         System.out.println(msg);
                     }
                 } catch (IOException ignored) {
-                } finally {
-                    System.out.println("Disconnected from server.");
+                    // Socket bị đóng khi client thoát: không phải lỗi.
                 }
             });
             listenerThread.setDaemon(true);
             listenerThread.start();
 
-            // Main thread reads from console and sends to server
             String userInput;
             while ((userInput = consoleIn.readLine()) != null) {
                 serverOut.println(userInput);
@@ -45,12 +51,8 @@ public class ChatClient {
                     break;
                 }
             }
-
-            try {
-                Thread.sleep(300);
-                socket.close();
-            } catch (Exception ignored) {}
-
+            // Không sleep để "đoán" thời điểm server xử lý xong:
+            // đóng socket ngay, luồng nền sẽ tự kết thúc khi readLine() trả về null.
         } catch (IOException e) {
             System.err.println("Chat client error: " + e.getMessage());
         }
